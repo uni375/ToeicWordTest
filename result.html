@@ -26,11 +26,8 @@
         <div class="result-info" id="resultInfo"></div>
       </div>
 
-      <!-- Save button -->
-      <div style="margin: 24px 0 8px;">
-        <button class="btn btn-accent" id="saveBtn" onclick="saveToSheets()">
-          📊 結果をGoogle Sheetsに保存
-        </button>
+      <!-- 自動保存ステータス -->
+      <div style="margin: 24px 0 8px; min-height: 24px;">
         <p class="status-msg" id="statusMsg"></p>
       </div>
     </div>
@@ -104,16 +101,14 @@
       });
     }
 
-    // Save to Google Sheets
-    async function saveToSheets() {
-      if (!CONFIG.GAS_URL || CONFIG.GAS_URL === 'YOUR_GAS_URL_HERE') {
-        showStatus('config.js に GAS_URL を設定してください', 'err');
-        return;
-      }
+    // 自動保存：Yuto / Yushi のみ
+    const SAVE_NAMES = ['yuto', 'yushi'];
 
-      const btn = document.getElementById('saveBtn');
-      btn.disabled = true;
-      btn.textContent = '保存中...';
+    async function autoSave() {
+      if (!SAVE_NAMES.includes(name.toLowerCase())) return;
+      if (!CONFIG.GAS_URL || CONFIG.GAS_URL === 'YOUR_GAS_URL_HERE') return;
+
+      showStatus('保存中...', '');
 
       const payload = {
         name,
@@ -132,17 +127,13 @@
           headers: { 'Content-Type': 'text/plain' },
           body:   JSON.stringify(payload)
         });
-
-        btn.textContent = '✓ 保存完了';
-        btn.style.background = 'var(--correct)';
-        btn.style.color = 'white';
-        showStatus('Google Sheetsに記録されました！', 'ok');
+        showStatus('📊 Google Sheetsに自動保存しました', 'ok');
       } catch (err) {
-        btn.disabled = false;
-        btn.textContent = '📊 結果をGoogle Sheetsに保存';
-        showStatus('保存に失敗しました。GAS_URLを確認してください。', 'err');
+        showStatus('⚠ 自動保存に失敗しました', 'err');
       }
     }
+
+    autoSave();
 
     function showStatus(msg, type) {
       const el = document.getElementById('statusMsg');
