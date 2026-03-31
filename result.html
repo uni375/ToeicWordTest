@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>結果 - 金フレ単語テスト</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+</head>
+<body>
+  <header class="header">
+    <h1>📚 TOEIC <span class="accent">金フレ</span> 単語テスト</h1>
+    <a href="history.html" class="header-link">📊 成績履歴</a>
+  </header>
+
+  <div class="container">
+    <!-- Score card -->
+    <div class="card" style="text-align:center;">
+      <h2 class="card-title" style="text-align:left;">テスト結果</h2>
+
+      <div class="score-display">
+        <div class="score-ring" id="scoreRing">
+          <div class="score-number" id="scorePercent">-</div>
+          <div class="score-fraction" id="scoreFraction">-</div>
+        </div>
+        <div class="result-info" id="resultInfo"></div>
+      </div>
+
+      <!-- Save button -->
+      <div style="margin: 24px 0 8px;">
+        <button class="btn btn-accent" id="saveBtn" onclick="saveToSheets()">
+          📊 結果をGoogle Sheetsに保存
+        </button>
+        <p class="status-msg" id="statusMsg"></p>
+      </div>
+    </div>
+
+    <!-- Wrong words -->
+    <div class="card" id="wrongCard" style="display:none;">
+      <h3 class="card-title">間違えた単語 <span id="wrongCount" style="color:var(--wrong);"></span></h3>
+      <ul class="wrong-list" id="wrongList"></ul>
+    </div>
+
+    <!-- All correct! -->
+    <div class="card" id="perfectCard" style="display:none; text-align:center;">
+      <div class="empty-state">
+        <div class="icon">🏆</div>
+        <p style="font-size:18px; font-weight:700; color:var(--correct);">全問正解！素晴らしい！</p>
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <a href="index.html" class="btn btn-outline">← もう一度テスト</a>
+      <a href="history.html" class="btn btn-primary">📊 成績履歴を見る</a>
+    </div>
+  </div>
+
+  <script>
+    const name    = sessionStorage.getItem('quizName');
+    const set     = parseInt(sessionStorage.getItem('quizSet'));
+    const order   = sessionStorage.getItem('quizOrder');
+    const answers = JSON.parse(sessionStorage.getItem('quizAnswers') || '[]');
+
+    if (!answers.length) {
+      window.location.href = 'index.html';
+    }
+
+    const correct  = answers.filter(a => a.isCorrect).length;
+    const total    = answers.length;
+    const accuracy = Math.round((correct / total) * 100);
+    const wrong    = answers.filter(a => !a.isCorrect);
+
+    // Score ring
+    const ring = document.getElementById('scoreRing');
+    if (accuracy >= 80)      ring.classList.add('high');
+    else if (accuracy >= 60) ring.classList.add('mid');
+    else                     ring.classList.add('low');
+
+    document.getElementById('scorePercent').textContent = accuracy + '%';
+    document.getElementById('scoreFraction').textContent = `${correct} / ${total}`;
+    document.getElementById('resultInfo').textContent =
+      `${name} さん ／ 第${set}セット ／ ${order === 'random' ? 'ランダム' : '順番通り'}`;
+
+    // Wrong words
+    if (wrong.length === 0) {
+      document.getElementById('perfectCard').style.display = 'block';
+    } else {
+      document.getElementById('wrongCard').style.display = 'block';
+      document.getElementById('wrongCount').textContent = `（${wrong.length}問）`;
+      const list = document.getElementById('wrongList');
+      wrong.forEach(a => {
+        const li = document.createElement('li');
+        li.className = 'wrong-item';
+        const userAns = a.userAnswer || '（未回答）';
+        li.innerHTML = `
+          <span class="jp">${a.word.japanese}</span>
+          <span>
+            <span class="user-ans">${userAns}</span>
+            <span class="arrow">→</span>
+            <span class="correct-ans">${a.word.english}</span>
+          </span>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    // Save to Google Sheets
+    async function saveToSheets() {
+      if (!CONFIG.GAS_URL || CONFIG.GAS_URL === 'YOUR_GAS_URL_HERE') {
+        showStatus('config.js に GAS_URL を設定してください', 'err');
+        return;
+      }
+
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+      btn.textContent = '保存中...';
+
+      const payload = {
+        name,
+        setNumber:  set,
+        score:      correct,
+        total,
+        accuracy,
+        wrongWords: wrong.map(a => `${a.word.english}(${a.word.japanese})`),
+        order
+      };
+
+      try {
+        await fetch(CONFIG.GAS_URL, {
+          method: 'POST',
+          mode:   'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body:   JSON.stringify(payload)
+        });
+
+        btn.textContent = '✓ 保存完了';
+        btn.style.background = 'var(--correct)';
+        btn.style.color = 'white';
+        showStatus('Google Sheetsに記録されました！', 'ok');
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = '📊 結果をGoogle Sheetsに保存';
+        showStatus('保存に失敗しました。GAS_URLを確認してください。', 'err');
+      }
+    }
+
+    function showStatus(msg, type) {
+      const el = document.getElementById('statusMsg');
+      el.textContent = msg;
+      el.className = 'status-msg ' + type;
+    }
+  </script>
+</body>
+</html>

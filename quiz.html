@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>テスト中 - 金フレ単語テスト</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>📚 TOEIC <span class="accent">金フレ</span> 単語テスト</h1>
+    <span id="headerInfo" style="font-size:13px; color:rgba(255,255,255,0.7);"></span>
+  </header>
+
+  <div class="container">
+    <div class="card" id="quizCard">
+      <!-- Progress -->
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+
+      <div class="question-meta">
+        <span id="questionNum">問題 1 / 100</span>
+        <span class="set-badge" id="setBadge"></span>
+      </div>
+
+      <!-- Question -->
+      <div class="japanese-prompt">
+        <span class="word-jp" id="wordJp">読み込み中...</span>
+      </div>
+
+      <!-- Answer input -->
+      <div class="form-group">
+        <label for="answer">英単語を入力</label>
+        <div class="answer-row">
+          <input type="text" id="answer"
+            placeholder="英語を入力..."
+            autocomplete="off" autocorrect="off"
+            autocapitalize="off" spellcheck="false" />
+          <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()">回答</button>
+        </div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="feedback-box" id="feedback"></div>
+
+      <!-- Next button -->
+      <div class="next-area" id="nextArea">
+        <button class="btn btn-accent" id="nextBtn" onclick="nextQuestion()">次へ →</button>
+      </div>
+    </div>
+
+    <!-- Error card (hidden) -->
+    <div class="card" id="errorCard" style="display:none; text-align:center;">
+      <div class="empty-state">
+        <div class="icon">⚠️</div>
+        <p id="errorMsg">words.csvの読み込みに失敗しました。</p>
+        <br>
+        <p style="font-size:13px; color:var(--text-light);">
+          ローカルで開く場合は VS Code の Live Server などを使ってください。<br>
+          GitHub Pages 上では正常に動作します。
+        </p>
+        <br>
+        <a href="index.html" class="btn btn-outline">← 戻る</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const name  = sessionStorage.getItem('quizName');
+    const set   = parseInt(sessionStorage.getItem('quizSet'));
+    const order = sessionStorage.getItem('quizOrder');
+
+    if (!name || !set) {
+      window.location.href = 'index.html';
+    }
+
+    document.getElementById('headerInfo').textContent = `${name} ／ 第${set}セット`;
+    document.getElementById('setBadge').textContent = `第${set}セット`;
+
+    let words = [];
+    let currentIndex = 0;
+    let answers = [];
+
+    // Enter キーで回答 or 次へ
+    document.getElementById('answer').addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      if (document.getElementById('nextArea').style.display === 'none' ||
+          document.getElementById('nextArea').style.display === '') {
+        submitAnswer();
+      } else {
+        nextQuestion();
+      }
+    });
+
+    async function loadWords() {
+      try {
+        const res  = await fetch('words.csv');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const text = await res.text();
+        const lines = text.trim().split(/\r?\n/);
+
+        const allWords = lines.slice(1)
+          .map(line => {
+            // id,english,japanese の形式（japaneseにカンマが含まれる場合も考慮）
+            const idx = line.indexOf(',');
+            const rest = line.slice(idx + 1);
+            const idx2 = rest.indexOf(',');
+            return {
+              id:       parseInt(line.slice(0, idx)),
+              english:  rest.slice(0, idx2).trim(),
+              japanese: rest.slice(idx2 + 1).trim()
+            };
+          })
+          .filter(w => !isNaN(w.id));
+
+        const start = (set - 1) * 100 + 1;
+        const end   = set * 100;
+        let setWords = allWords.filter(w => w.id >= start && w.id <= end);
+
+        if (setWords.length === 0) {
+          showError(`第${set}セットの単語がwords.csvに見つかりません（ID ${start}〜${end}）。`);
+          return;
+        }
+
+        if (order === 'random') {
+          // Fisher-Yates shuffle
+          for (let i = setWords.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [setWords[i], setWords[j]] = [setWords[j], setWords[i]];
+          }
+        }
+
+        words = setWords;
+        showQuestion();
+      } catch (err) {
+        showError('words.csvの読み込みに失敗しました。\n' + err.message);
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('quizCard').style.display = 'none';
+      document.getElementById('errorCard').style.display = 'block';
+      document.getElementById('errorMsg').textContent = msg;
+    }
+
+    function showQuestion() {
+      const word     = words[currentIndex];
+      const progress = (currentIndex / words.length) * 100;
+
+      document.getElementById('progressFill').style.width = progress + '%';
+      document.getElementById('questionNum').textContent =
+        `問題 ${currentIndex + 1} / ${words.length}`;
+      document.getElementById('wordJp').textContent = word.japanese;
+
+      // Reset UI
+      const answerInput = document.getElementById('answer');
+      answerInput.value    = '';
+      answerInput.disabled = false;
+      answerInput.style.borderColor = '';
+
+      document.getElementById('feedback').className = 'feedback-box';
+      document.getElementById('feedback').innerHTML = '';
+      document.getElementById('submitBtn').style.display = 'inline-block';
+      document.getElementById('nextArea').style.display  = 'none';
+
+      // 最後の問題なら「次へ」を「結果を見る」に変更
+      document.getElementById('nextBtn').textContent =
+        currentIndex === words.length - 1 ? '結果を見る 📊' : '次へ →';
+
+      answerInput.focus();
+    }
+
+    function submitAnswer() {
+      const input   = document.getElementById('answer').value.trim().toLowerCase();
+      const correct = words[currentIndex].english.toLowerCase();
+      const isCorrect = input === correct;
+
+      answers.push({
+        word:      words[currentIndex],
+        userAnswer: document.getElementById('answer').value.trim(),
+        isCorrect
+      });
+
+      const fb = document.getElementById('feedback');
+      if (isCorrect) {
+        fb.innerHTML  = `✓ 正解！ <strong>${words[currentIndex].english}</strong>`;
+        fb.className  = 'feedback-box correct';
+      } else {
+        const displayed = input || '（未回答）';
+        fb.innerHTML  = `✗ 不正解。 <span style="text-decoration:line-through;">${displayed}</span>
+                         → 正解: <strong>${words[currentIndex].english}</strong>`;
+        fb.className  = 'feedback-box wrong';
+      }
+
+      document.getElementById('answer').disabled = true;
+      document.getElementById('submitBtn').style.display = 'none';
+      document.getElementById('nextArea').style.display  = 'block';
+    }
+
+    function nextQuestion() {
+      currentIndex++;
+      if (currentIndex >= words.length) {
+        sessionStorage.setItem('quizAnswers', JSON.stringify(answers));
+        window.location.href = 'result.html';
+      } else {
+        showQuestion();
+      }
+    }
+
+    loadWords();
+  </script>
+</body>
+</html>

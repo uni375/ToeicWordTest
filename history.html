@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>成績履歴 - 金フレ単語テスト</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+  <header class="header">
+    <h1>📚 TOEIC <span class="accent">金フレ</span> 単語テスト</h1>
+    <a href="index.html" class="header-link">← テストへ</a>
+  </header>
+
+  <div class="container">
+    <!-- Chart card -->
+    <div class="card">
+      <h2 class="card-title">正答率の推移</h2>
+
+      <div class="filter-row">
+        <div class="form-group">
+          <label for="filterName">ユーザー</label>
+          <select id="filterName" onchange="renderChart()">
+            <option value="">全員</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterSet">セット</label>
+          <select id="filterSet" onchange="renderChart()">
+            <option value="">全セット</option>
+            <option value="1">第1セット</option>
+            <option value="2">第2セット</option>
+            <option value="3">第3セット</option>
+            <option value="4">第4セット</option>
+            <option value="5">第5セット</option>
+            <option value="6">第6セット</option>
+            <option value="7">第7セット</option>
+            <option value="8">第8セット</option>
+            <option value="9">第9セット</option>
+            <option value="10">第10セット</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="myChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Records card -->
+    <div class="card">
+      <h3 class="card-title">テスト記録</h3>
+      <div id="tableArea"><div class="loading">読み込み中...</div></div>
+    </div>
+
+    <div style="text-align:center;">
+      <a href="index.html" class="btn btn-outline">← トップに戻る</a>
+    </div>
+  </div>
+
+  <script>
+    const COLORS = ['#1a237e', '#e65100', '#2e7d32', '#6a1b9a', '#00838f', '#c62828'];
+    let allRecords = [];
+    let chart = null;
+
+    async function loadHistory() {
+      if (!CONFIG.GAS_URL || CONFIG.GAS_URL === 'YOUR_GAS_URL_HERE') {
+        document.getElementById('tableArea').innerHTML = `
+          <div class="empty-state">
+            <div class="icon">⚙️</div>
+            <p>config.js に GAS_URL を設定してください。</p>
+          </div>`;
+        return;
+      }
+
+      try {
+        const res = await fetch(CONFIG.GAS_URL + '?action=get', { redirect: 'follow' });
+        allRecords = await res.json();
+
+        if (!Array.isArray(allRecords) || allRecords.length === 0) {
+          showEmpty();
+          return;
+        }
+
+        // Populate name filter
+        const names = [...new Set(allRecords.map(r => r.name))].sort();
+        const sel = document.getElementById('filterName');
+        names.forEach(n => {
+          const opt = document.createElement('option');
+          opt.value = n;
+          opt.textContent = n;
+          sel.appendChild(opt);
+        });
+
+        renderChart();
+        renderTable();
+      } catch (err) {
+        document.getElementById('tableArea').innerHTML = `
+          <div class="empty-state">
+            <div class="icon">❌</div>
+            <p>データの読み込みに失敗しました。<br>GAS_URL と Google Apps Script の設定を確認してください。</p>
+            <p style="font-size:12px; margin-top:8px; color:var(--text-light);">${err.message}</p>
+          </div>`;
+      }
+    }
+
+    function getFiltered() {
+      const filterName = document.getElementById('filterName').value;
+      const filterSet  = document.getElementById('filterSet').value;
+      return allRecords.filter(r =>
+        (!filterName || r.name === filterName) &&
+        (!filterSet  || String(r.setNumber) === filterSet)
+      );
+    }
+
+    function renderChart() {
+      const filtered = getFiltered();
+      if (filtered.length === 0) {
+        if (chart) { chart.destroy(); chart = null; }
+        return;
+      }
+
+      // Group by name
+      const byName = {};
+      filtered.forEach(r => {
+        if (!byName[r.name]) byName[r.name] = [];
+        byName[r.name].push(r);
+      });
+
+      // Shared X labels: "MM/DD S1" for each record
+      const labels = filtered.map(r => {
+        const d = new Date(r.timestamp);
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${mm}/${dd} S${r.setNumber}`;
+      });
+
+      const datasets = Object.entries(byName).map(([name, recs], i) => ({
+        label: name,
+        data: filtered.map(r => r.name === name ? parseFloat(r.accuracy) : null),
+        borderColor:     COLORS[i % COLORS.length],
+        backgroundColor: COLORS[i % COLORS.length] + '30',
+        pointBackgroundColor: COLORS[i % COLORS.length],
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        tension: 0.3,
+        spanGaps: true
+      }));
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(document.getElementById('myChart'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              min: 0,
+              max: 100,
+              ticks: { callback: v => v + '%', stepSize: 20 },
+              grid: { color: '#f0f0f0' }
+            },
+            x: {
+              grid: { display: false }
+            }
+          },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.dataset.label}: ${ctx.raw}%`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTable() {
+      const filtered = [...allRecords].reverse();
+
+      if (filtered.length === 0) {
+        showEmpty();
+        return;
+      }
+
+      const rows = filtered.map(r => {
+        const acc = parseFloat(r.accuracy);
+        const badgeClass = acc >= 80 ? 'high' : acc >= 60 ? 'mid' : 'low';
+        const d   = new Date(r.timestamp);
+        const dateStr = d.toLocaleDateString('ja-JP');
+
+        return `
+          <tr>
+            <td>${dateStr}</td>
+            <td><strong>${r.name}</strong></td>
+            <td>第${r.setNumber}セット</td>
+            <td>${r.score} / ${r.total}</td>
+            <td><span class="accuracy-badge ${badgeClass}">${acc}%</span></td>
+            <td style="font-size:12px; color:var(--text-light); max-width:200px; word-break:break-all;">
+              ${r.order || ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('tableArea').innerHTML = `
+        <div style="overflow-x:auto;">
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th>日付</th>
+                <th>名前</th>
+                <th>セット</th>
+                <th>スコア</th>
+                <th>正答率</th>
+                <th>出題順</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function showEmpty() {
+      document.getElementById('tableArea').innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📭</div>
+          <p>まだ記録がありません。テストを受けて保存してください。</p>
+        </div>`;
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>
