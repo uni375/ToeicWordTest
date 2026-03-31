@@ -27,6 +27,7 @@
       <!-- Question -->
       <div class="japanese-prompt">
         <span class="word-jp" id="wordJp">読み込み中...</span>
+        <span class="word-example" id="wordExample" style="display:none;"></span>
       </div>
 
       <!-- Answer input -->
@@ -100,16 +101,36 @@
         const text = await res.text();
         const lines = text.trim().split(/\r?\n/);
 
+        // クォート対応CSVパーサー
+        function parseCSVLine(line) {
+          const fields = [];
+          let cur = '', inQ = false;
+          for (let i = 0; i < line.length; i++) {
+            if (line[i] === '"') {
+              if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+              else inQ = !inQ;
+            } else if (line[i] === ',' && !inQ) {
+              fields.push(cur.trim()); cur = '';
+            } else { cur += line[i]; }
+          }
+          fields.push(cur.trim());
+          return fields;
+        }
+
+        const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+        const iId = headers.indexOf('id');
+        const iEn = headers.indexOf('english');
+        const iJp = headers.indexOf('japanese');
+        const iEx = headers.indexOf('example');
+
         const allWords = lines.slice(1)
           .map(line => {
-            // id,english,japanese の形式（japaneseにカンマが含まれる場合も考慮）
-            const idx = line.indexOf(',');
-            const rest = line.slice(idx + 1);
-            const idx2 = rest.indexOf(',');
+            const f = parseCSVLine(line);
             return {
-              id:       parseInt(line.slice(0, idx)),
-              english:  rest.slice(0, idx2).trim(),
-              japanese: rest.slice(idx2 + 1).trim()
+              id:       parseInt(f[iId]),
+              english:  f[iEn] || '',
+              japanese: f[iJp] || '',
+              example:  iEx >= 0 ? (f[iEx] || '') : ''
             };
           })
           .filter(w => !isNaN(w.id));
@@ -151,7 +172,22 @@
       document.getElementById('progressFill').style.width = progress + '%';
       document.getElementById('questionNum').textContent =
         `問題 ${currentIndex + 1} / ${words.length}`;
-      document.getElementById('wordJp').textContent = word.japanese;
+
+      // 例文あり：例文をメイン表示、日本語をサブ表示
+      // 例文なし：日本語のみ表示
+      const exampleEl = document.getElementById('wordExample');
+      if (word.example) {
+        document.getElementById('wordJp').textContent = word.japanese;
+        document.getElementById('wordJp').style.fontSize = '18px';
+        document.getElementById('wordJp').style.color = 'var(--text-light)';
+        exampleEl.textContent = word.example;
+        exampleEl.style.display = 'block';
+      } else {
+        document.getElementById('wordJp').textContent = word.japanese;
+        document.getElementById('wordJp').style.fontSize = '';
+        document.getElementById('wordJp').style.color = '';
+        exampleEl.style.display = 'none';
+      }
 
       // Reset UI
       const answerInput = document.getElementById('answer');

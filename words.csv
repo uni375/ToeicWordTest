@@ -1,101 +1,101 @@
-﻿id,english,japanese
-1,anyway,とにかく
-2,following,~の後で
-3,refer,参照する
-4,employee,従業員
-5,offer,申し出る
-6,likely,おそらく
-7,provide,提供する
-8,available,入手できる/可能な/都合がつく
-9,conference,会議
-10,purchase,購入する
-11,include,含む
-12,department,部/売り場/省/局/学科
-13,contact,連絡する
-14,according,～によると
-15,client,クライアント/顧客
-16,review,見直す/レビューする
-17,indicate,示す/示唆する
-18,attend,出席する/対応する
-19,hire,雇う/採用者
-20,local,地元の/地方の
-21,repair,修理する
-22,article,記事
-23,update,更新する
-24,advertise,宣伝する
-25,equipment,機器/ 装備
-26,increase,増える/増やす
-27,opening,空き/開業
-28,ship,発送する/出荷する
-29,expect,予期する/期待する
-30,recently,最近
-31,delivery,配達
-32,supply,用品/ 必需品/ 供給
-33,feature,呼び物にする/特集する
-34,require,必要とする/要求する
-35,process,過程/プロセス
-36,construction,建設
-37,charge,料金/責任
-38,material,材料/資料
-39,survey,アンケート調査
-40,submit,提出する
-41,create,創造する/作り出す
-42,budget,予算
-43,appointment,予約/アポ/約束/任命/氏名
-44,additional,追加の
-45,application,申し込み(用紙)/応募(書類)/応用/塗布/アプリ
-46,production,生産/制作/作品
-47,fee,料金
-48,recommend,勧める/推薦する
-49,award,賞
-50,delay,遅らせる
-51,policy,規定/方針/保険証券/政策
-52,contract,契約(書)
-53,industry,業界/産業
-54,facility,施設/設備
-55,payment,支払い
-56,detail,詳細/細部
-57,concern,懸念(事項)/関心(事)
-58,option,選択肢/オプション
-59,annual,年1回の/例年の/1年間の
-60,suggestion,提案/示唆
-61,confirm,確認する
-62,note,注意する/述べる/気づく
-63,package,小包/パッケージ
-64,document,文書/書類
-65,mail,郵便
-66,extra,追加の/余分の
-67,firm,事務所/会社
-68,publish,出版する/掲載する/公表する
-69,located,位置している/(場所)にある
-70,broadcast,放送する
-71,management,管理/経営(陣)
-72,resource,資源/財産/(教育)資料
-73,base,拠点を置く/基礎を置く
-74,currently,現在
-75,rate,料金/割合/レート
-76,financial,財政上の/財務の/金融上の
-77,consider,(よく)考える/検討する
-78,install,設置する/インストールする
-79,allow,許す/可能にする/(時間などを)見込む
-80,colleague,同僚
-81,arrange,手配する/並べる
-82,reduce,減らす/(価格などを)下げる
-83,replace,取り替える/取って代わる
-84,register,登録する/述べる
-85,focus,集中する/重点を置く
-86,proposal,提案/案
-87,introduce,紹介する/導入する
-88,prefer,(~の方を)好む
-89,promote,昇進させる/販売を促進する/宣伝する/促進する
-90,opportunity,機会/チャンス
-91,clothing,衣料品/衣類
-92,exhibit,展示(会)/展示(品)
-93,property,物件/不動産/所有物/資産/特性
-94,expand,拡大する/進出する
-95,host,主催する/司会する
-96,reserve,予約する/取っておく/(権利等を)保有する
-97,pleased,満足した/喜んだ/嬉しい
-98,instruction,指示(書)/取扱説明書
-99,latest,最新の
-100,bill,請求書/法案
+﻿id,english,japanese,example
+1,anyway,とにかく,Let's proceed with the plan ____.
+2,following,~の後で,Please review the report ____ the meeting.
+3,refer,参照する,Please ____ to the attached document for details.
+4,employee,従業員,Each ____ must complete the training by Friday.
+5,offer,申し出る,The company will ____ a competitive salary package.
+6,likely,おそらく,The project is ____ to be completed on schedule.
+7,provide,提供する,We will ____ all necessary materials for the workshop.
+8,available,入手できる/可能な/都合がつく,The manager is ____ for a meeting after 3 p.m.
+9,conference,会議,The annual sales ____ will be held in Tokyo.
+10,purchase,購入する,Please ____ the supplies before the end of the month.
+11,include,含む,The price does not ____ shipping fees.
+12,department,部/売り場/省/局/学科,Please send the report to the marketing ____.
+13,contact,連絡する,Please ____ our customer service team for assistance.
+14,according,～によると,____ to the report, sales increased by 20%.
+15,client,クライアント/顧客,We need to prepare a presentation for our new ____.
+16,review,見直す/レビューする,Please ____ the contract before signing it.
+17,indicate,示す/示唆する,The data ____ that customer satisfaction has improved.
+18,attend,出席する/対応する,All staff members are required to ____ the seminar.
+19,hire,雇う/採用者,The company plans to ____ 50 new engineers this year.
+20,local,地元の/地方の,We partner with ____ suppliers to reduce shipping costs.
+21,repair,修理する,The technician was called to ____ the broken printer.
+22,article,記事,The ____ in today's newspaper covers our new product.
+23,update,更新する,Please ____ your contact information in the system.
+24,advertise,宣伝する,We will ____ the new product on social media.
+25,equipment,機器/ 装備,All ____ must be returned to the storage room after use.
+26,increase,増える/増やす,The company plans to ____ its workforce by 10%.
+27,opening,空き/開業,There is a job ____ in the accounting department.
+28,ship,発送する/出荷する,We will ____ your order within three business days.
+29,expect,予期する/期待する,We ____ the project to be finished by next month.
+30,recently,最近,The company ____ launched a new line of products.
+31,delivery,配達,The ____ of the package was delayed due to bad weather.
+32,supply,用品/ 必需品/ 供給,We need to ____ the warehouse with new inventory.
+33,feature,呼び物にする/特集する,The new model will ____ an upgraded camera system.
+34,require,必要とする/要求する,This position will ____ at least five years of experience.
+35,process,過程/プロセス,Please follow the standard ____ for submitting expense reports.
+36,construction,建設,The ____ of the new office building will begin next spring.
+37,charge,料金/責任,There is an additional ____ for express shipping.
+38,material,材料/資料,Please gather all the ____ needed for the presentation.
+39,survey,アンケート調査,We conducted a customer satisfaction ____ last month.
+40,submit,提出する,Please ____ your expense report by the end of the week.
+41,create,創造する/作り出す,Our team will ____ a new marketing strategy this quarter.
+42,budget,予算,The department needs to stay within its annual ____.
+43,appointment,予約/アポ/約束/任命/氏名,I need to make an ____ with the doctor for next Tuesday.
+44,additional,追加の,Please provide any ____ information that may be relevant.
+45,application,申し込み(用紙)/応募(書類)/応用/塗布/アプリ,Please fill out the job ____ form and submit it online.
+46,production,生産/制作/作品,The factory increased ____ to meet growing demand.
+47,fee,料金,There is a monthly membership ____ of 50 dollars.
+48,recommend,勧める/推薦する,I would ____ this hotel for business travelers.
+49,award,賞,She received an ____ for outstanding performance.
+50,delay,遅らせる,Bad weather caused a ____ in the flight schedule.
+51,policy,規定/方針/保険証券/政策,Please read the company ____ on data security carefully.
+52,contract,契約(書),Both parties signed the ____ at the end of the meeting.
+53,industry,業界/産業,The automotive ____ has seen significant growth this year.
+54,facility,施設/設備,The new sports ____ will open to the public next month.
+55,payment,支払い,Please ensure that ____ is made within 30 days of the invoice.
+56,detail,詳細/細部,Please check the ____ of the contract before signing.
+57,concern,懸念(事項)/関心(事),The manager expressed ____ about the project timeline.
+58,option,選択肢/オプション,You have the ____ to work from home on Fridays.
+59,annual,年1回の/例年の/1年間の,The company holds an ____ review of all employees.
+60,suggestion,提案/示唆,Do you have any ____ for improving our services?
+61,confirm,確認する,Please ____ your attendance by replying to this email.
+62,note,注意する/述べる/気づく,Please ____ that the office will be closed on Monday.
+63,package,小包/パッケージ,We offer a benefits ____ that includes health insurance.
+64,document,文書/書類,Please sign the ____ and return it by Friday.
+65,mail,郵便,I will ____ the invoice to your billing address.
+66,extra,追加の/余分の,The hotel offers ____ amenities for business travelers.
+67,firm,事務所/会社,She works for a well-known law ____ in the city.
+68,publish,出版する/掲載する/公表する,The company plans to ____ its annual report next month.
+69,located,位置している/(場所)にある,Our new office is ____ in the center of downtown.
+70,broadcast,放送する,The press conference will be ____ live on television.
+71,management,管理/経営(陣),Good ____ is key to the success of any organization.
+72,resource,資源/財産/(教育)資料,The company invested in new human ____ software.
+73,base,拠点を置く/基礎を置く,The company decided to ____ its new branch in Singapore.
+74,currently,現在,We are ____ reviewing applications for the position.
+75,rate,料金/割合/レート,The hotel offers a special ____ for corporate guests.
+76,financial,財政上の/財務の/金融上の,The company released its ____ results for the third quarter.
+77,consider,(よく)考える/検討する,We are ____ expanding our operations to Asia.
+78,install,設置する/インストールする,A technician will ____ the new software on your computer.
+79,allow,許す/可能にする/(時間などを)見込む,Company policy does not ____ personal use of work equipment.
+80,colleague,同僚,I discussed the proposal with a ____ before the meeting.
+81,arrange,手配する/並べる,Please ____ a meeting with the client for next Thursday.
+82,reduce,減らす/(価格などを)下げる,The new system helped ____ operational costs by 15%.
+83,replace,取り替える/取って代わる,We need to ____ the outdated computers in the office.
+84,register,登録する/述べる,Please ____ for the conference on our website.
+85,focus,集中する/重点を置く,The team decided to ____ on improving customer service.
+86,proposal,提案/案,The board approved the new business ____ last week.
+87,introduce,紹介する/導入する,I'd like to ____ our new product at the trade show.
+88,prefer,(~の方を)好む,Most employees ____ to receive feedback in writing.
+89,promote,昇進させる/販売を促進する/宣伝する/促進する,The company plans to ____ its products at the trade fair.
+90,opportunity,機会/チャンス,This is a great ____ to expand our business overseas.
+91,clothing,衣料品/衣類,The store sells a wide range of business ____.
+92,exhibit,展示(会)/展示(品),The museum will ____ rare artworks from around the world.
+93,property,物件/不動産/所有物/資産/特性,The company owns several commercial ____ in the city.
+94,expand,拡大する/進出する,The company plans to ____ its operations into new markets.
+95,host,主催する/司会する,Our company will ____ the annual conference this year.
+96,reserve,予約する/取っておく/(権利等を)保有する,Please ____ a meeting room for Thursday afternoon.
+97,pleased,満足した/喜んだ/嬉しい,We are ____ to announce the opening of our new branch.
+98,instruction,指示(書)/取扱説明書,Please follow the ____ in the manual carefully.
+99,latest,最新の,The ____ model of the smartphone was released yesterday.
+100,bill,請求書/法案,Please send the ____ to our accounting department.
