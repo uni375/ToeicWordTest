@@ -122,24 +122,46 @@
         return;
       }
 
-      // Group by name
+      // Group by name, sort each user's records by timestamp
       const byName = {};
       filtered.forEach(r => {
         if (!byName[r.name]) byName[r.name] = [];
         byName[r.name].push(r);
       });
+      Object.values(byName).forEach(recs =>
+        recs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      );
 
-      // Shared X labels: "MM/DD S1" for each record
-      const labels = filtered.map(r => {
-        const d = new Date(r.timestamp);
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return `${mm}/${dd} S${r.setNumber}`;
+      // For each user, assign attempt index per set (1st, 2nd, ...)
+      // key = "setNumber-attemptIndex"  e.g. "1-1", "1-2", "2-1"
+      const userAttempts = {}; // { name: { "set-attempt": accuracy } }
+      Object.entries(byName).forEach(([name, recs]) => {
+        const setCount = {};
+        userAttempts[name] = {};
+        recs.forEach(r => {
+          const s = String(r.setNumber);
+          setCount[s] = (setCount[s] || 0) + 1;
+          userAttempts[name][`${s}-${setCount[s]}`] = parseFloat(r.accuracy);
+        });
       });
 
-      const datasets = Object.entries(byName).map(([name, recs], i) => ({
+      // Collect all unique keys across all users and sort by (set, attempt)
+      const allKeys = [...new Set(
+        Object.values(userAttempts).flatMap(a => Object.keys(a))
+      )].sort((a, b) => {
+        const [sa, ia] = a.split('-').map(Number);
+        const [sb, ib] = b.split('-').map(Number);
+        return sa !== sb ? sa - sb : ia - ib;
+      });
+
+      const labels = allKeys.map(key => {
+        const [set, attempt] = key.split('-').map(Number);
+        return attempt === 1 ? `S${set}` : `S${set}(${attempt}回目)`;
+      });
+
+      const datasets = Object.entries(userAttempts).map(([name, attempts], i) => ({
         label: name,
-        data: filtered.map(r => r.name === name ? parseFloat(r.accuracy) : null),
+        data: allKeys.map(key => attempts[key] ?? null),
         borderColor:     COLORS[i % COLORS.length],
         backgroundColor: COLORS[i % COLORS.length] + '30',
         pointBackgroundColor: COLORS[i % COLORS.length],
