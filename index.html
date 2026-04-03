@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TOEIC 金フレ 単語テスト</title>
   <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
 </head>
 <body>
   <header class="header">
@@ -56,6 +57,7 @@
       </div>
 
       <button class="btn btn-accent btn-full" onclick="startQuiz()">テスト開始 →</button>
+      <button class="btn btn-outline btn-full" id="reviewBtn" onclick="startReview()" style="margin-top:8px;">復習モード（全履歴の間違い）</button>
 
       <p style="margin-top: 16px; font-size: 13px; color: var(--text-light); text-align: center;">
         💾 名前が <strong>Yuto</strong> または <strong>Yushi</strong> の場合のみ結果が自動保存されます
@@ -77,8 +79,61 @@
       sessionStorage.setItem('quizName',  name);
       sessionStorage.setItem('quizSet',   set);
       sessionStorage.setItem('quizOrder', order);
+      sessionStorage.removeItem('quizMode');
+      sessionStorage.removeItem('reviewWords');
 
       window.location.href = 'quiz.html';
+    }
+
+    async function startReview() {
+      const name = document.getElementById('name').value;
+      localStorage.setItem('lastPlayerName', name);
+
+      if (!CONFIG.GAS_URL || CONFIG.GAS_URL === 'YOUR_GAS_URL_HERE') {
+        alert('GAS_URLが設定されていないため復習モードは使用できません。');
+        return;
+      }
+
+      const btn = document.getElementById('reviewBtn');
+      btn.textContent = '読み込み中...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(CONFIG.GAS_URL + '?action=get', { redirect: 'follow' });
+        const records = await res.json();
+
+        const userRecords = records.filter(r => r.name === name);
+        if (userRecords.length === 0) {
+          alert(`${name} の記録がまだありません。`);
+          return;
+        }
+
+        const wrongSet = new Set();
+        userRecords.forEach(r => {
+          if (r.wrongWords) {
+            r.wrongWords.split(' / ').forEach(w => {
+              const eng = w.split('(')[0].trim();
+              if (eng) wrongSet.add(eng);
+            });
+          }
+        });
+
+        if (wrongSet.size === 0) {
+          alert(`${name} の間違えた単語がありません。`);
+          return;
+        }
+
+        sessionStorage.setItem('quizName',     name);
+        sessionStorage.setItem('quizMode',     'review');
+        sessionStorage.setItem('reviewWords',  JSON.stringify([...wrongSet]));
+
+        window.location.href = 'quiz.html';
+      } catch (err) {
+        alert('データの読み込みに失敗しました。');
+      } finally {
+        btn.textContent = '復習モード（全履歴の間違い）';
+        btn.disabled = false;
+      }
     }
 
   </script>

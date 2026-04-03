@@ -71,13 +71,19 @@
     const name  = sessionStorage.getItem('quizName');
     const set   = parseInt(sessionStorage.getItem('quizSet'));
     const order = sessionStorage.getItem('quizOrder');
+    const mode  = sessionStorage.getItem('quizMode'); // 'review' or null
 
-    if (!name || !set) {
+    if (!name || (!set && mode !== 'review')) {
       window.location.href = 'index.html';
     }
 
-    document.getElementById('headerInfo').textContent = `${name} ／ 第${set}セット`;
-    document.getElementById('setBadge').textContent = `第${set}セット`;
+    if (mode === 'review') {
+      document.getElementById('headerInfo').textContent = `${name} ／ 復習モード`;
+      document.getElementById('setBadge').textContent = '復習';
+    } else {
+      document.getElementById('headerInfo').textContent = `${name} ／ 第${set}セット`;
+      document.getElementById('setBadge').textContent = `第${set}セット`;
+    }
 
     let words = [];
     let currentIndex = 0;
@@ -135,20 +141,33 @@
           })
           .filter(w => !isNaN(w.id));
 
-        const start = (set - 1) * 100 + 1;
-        const end   = set * 100;
-        let setWords = allWords.filter(w => w.id >= start && w.id <= end);
-
-        if (setWords.length === 0) {
-          showError(`第${set}セットの単語がwords.csvに見つかりません（ID ${start}〜${end}）。`);
-          return;
-        }
-
-        if (order === 'random') {
-          // Fisher-Yates shuffle
+        let setWords;
+        if (mode === 'review') {
+          const reviewWords = JSON.parse(sessionStorage.getItem('reviewWords') || '[]');
+          setWords = allWords.filter(w => reviewWords.includes(w.english));
+          if (setWords.length === 0) {
+            showError('復習する単語がwords.csvに見つかりませんでした。');
+            return;
+          }
+          // 復習モードは常にランダム
           for (let i = setWords.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [setWords[i], setWords[j]] = [setWords[j], setWords[i]];
+          }
+        } else {
+          const start = (set - 1) * 100 + 1;
+          const end   = set * 100;
+          setWords = allWords.filter(w => w.id >= start && w.id <= end);
+          if (setWords.length === 0) {
+            showError(`第${set}セットの単語がwords.csvに見つかりません（ID ${start}〜${end}）。`);
+            return;
+          }
+          if (order === 'random') {
+            // Fisher-Yates shuffle
+            for (let i = setWords.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [setWords[i], setWords[j]] = [setWords[j], setWords[i]];
+            }
           }
         }
 

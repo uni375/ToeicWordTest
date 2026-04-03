@@ -56,6 +56,7 @@
     const name    = sessionStorage.getItem('quizName');
     const set     = parseInt(sessionStorage.getItem('quizSet'));
     const order   = sessionStorage.getItem('quizOrder');
+    const mode    = sessionStorage.getItem('quizMode');
     const answers = JSON.parse(sessionStorage.getItem('quizAnswers') || '[]');
 
     if (!answers.length) {
@@ -75,8 +76,9 @@
 
     document.getElementById('scorePercent').textContent = accuracy + '%';
     document.getElementById('scoreFraction').textContent = `${correct} / ${total}`;
-    document.getElementById('resultInfo').textContent =
-      `${name} さん ／ 第${set}セット ／ ${order === 'random' ? 'ランダム' : '順番通り'}`;
+    document.getElementById('resultInfo').textContent = mode === 'review'
+      ? `${name} さん ／ 復習モード`
+      : `${name} さん ／ 第${set}セット ／ ${order === 'random' ? 'ランダム' : '順番通り'}`;
 
     // Wrong words
     if (wrong.length === 0) {
@@ -105,6 +107,7 @@
     const SAVE_NAMES = ['yuto', 'yushi'];
 
     async function autoSave() {
+      if (mode === 'review') return; // 復習モードは保存しない
       if (!SAVE_NAMES.includes(name.toLowerCase())) return;
       if (!CONFIG.GAS_URL || CONFIG.GAS_URL === 'YOUR_GAS_URL_HERE') return;
 
