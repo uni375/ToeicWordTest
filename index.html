@@ -102,30 +102,64 @@
         const res = await fetch(CONFIG.GAS_URL + '?action=get', { redirect: 'follow' });
         const records = await res.json();
 
-        const userRecords = records.filter(r => r.name === name);
+        // 対象ユーザーのレコードを時系列順に並べる
+        const userRecords = records
+          .filter(r => r.name === name)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
         if (userRecords.length === 0) {
           alert(`${name} の記録がまだありません。`);
           return;
         }
 
-        const wrongSet = new Set();
+        // 単語ごとの間違い回数 と 初出のセット番号 を集計
+        const wrongCount = {};  // { english: count }
+        const wordSetMap = {};  // { english: setNumber }
         userRecords.forEach(r => {
-          if (r.wrongWords) {
-            r.wrongWords.split(' / ').forEach(w => {
-              const eng = w.split('(')[0].trim();
-              if (eng) wrongSet.add(eng);
-            });
-          }
+          if (!r.wrongWords) return;
+          r.wrongWords.split(' / ').forEach(w => {
+            const eng = w.split('(')[0].trim();
+            if (!eng) return;
+            wrongCount[eng] = (wrongCount[eng] || 0) + 1;
+            if (!wordSetMap[eng]) wordSetMap[eng] = r.setNumber;
+          });
         });
 
-        if (wrongSet.size === 0) {
+        if (Object.keys(wrongCount).length === 0) {
           alert(`${name} の間違えた単語がありません。`);
           return;
         }
 
-        sessionStorage.setItem('quizName',     name);
-        sessionStorage.setItem('quizMode',     'review');
-        sessionStorage.setItem('reviewWords',  JSON.stringify([...wrongSet]));
+        // セットごとのレコードを整理
+        const recordsBySet = {};
+        userRecords.forEach(r => {
+          if (!recordsBySet[r.setNumber]) recordsBySet[r.setNumber] = [];
+          recordsBySet[r.setNumber].push(r);
+        });
+
+        // 卒業判定: そのセットの直近2回どちらにも出てこなかった単語は除外
+        const masteredWords = new Set();
+        Object.entries(wordSetMap).forEach(([eng, setNum]) => {
+          const setRecords = recordsBySet[setNum] || [];
+          if (setRecords.length < 2) return;
+          const last2 = setRecords.slice(-2);
+          const stillWrong = last2.some(r =>
+            r.wrongWords && r.wrongWords.split(' / ').some(w => w.split('(')[0].trim() === eng)
+          );
+          if (!stillWrong) masteredWords.add(eng);
+        });
+
+        const reviewWords = Object.keys(wrongCount).filter(w => !masteredWords.has(w));
+
+        if (reviewWords.length === 0) {
+          alert(`${name} の復習すべき単語がありません。全部覚えています！`);
+          return;
+        }
+
+        sessionStorage.setItem('quizName',          name);
+        sessionStorage.setItem('quizMode',          'review');
+        sessionStorage.setItem('reviewWords',       JSON.stringify(reviewWords));
+        sessionStorage.setItem('reviewWrongCounts', JSON.stringify(wrongCount));
 
         window.location.href = 'quiz.html';
       } catch (err) {

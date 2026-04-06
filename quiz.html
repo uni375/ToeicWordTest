@@ -24,6 +24,9 @@
         <span class="set-badge" id="setBadge"></span>
       </div>
 
+      <!-- 復習モード: 間違い回数バッジ -->
+      <div id="wrongCountBadge" style="display:none; margin-bottom:8px; font-size:12px; color:var(--wrong); font-weight:600;"></div>
+
       <!-- Question -->
       <div class="japanese-prompt">
         <span class="word-jp" id="wordJp">読み込み中...</span>
@@ -71,7 +74,8 @@
     const name  = sessionStorage.getItem('quizName');
     const set   = parseInt(sessionStorage.getItem('quizSet'));
     const order = sessionStorage.getItem('quizOrder');
-    const mode  = sessionStorage.getItem('quizMode'); // 'review' or null
+    const mode        = sessionStorage.getItem('quizMode'); // 'review' or null
+    const wrongCounts = JSON.parse(sessionStorage.getItem('reviewWrongCounts') || '{}');
 
     if (!name || (!set && mode !== 'review')) {
       window.location.href = 'index.html';
@@ -206,6 +210,16 @@
         document.getElementById('wordJp').style.fontSize = '';
         document.getElementById('wordJp').style.color = '';
         exampleEl.style.display = 'none';
+      }
+
+      // 復習モード: 間違い回数を表示
+      const wrongCountEl = document.getElementById('wrongCountBadge');
+      if (mode === 'review' && wrongCountEl) {
+        const count = wrongCounts[word.english] || 0;
+        wrongCountEl.textContent = `これまで ${count} 回間違えた単語`;
+        wrongCountEl.style.display = 'block';
+      } else if (wrongCountEl) {
+        wrongCountEl.style.display = 'none';
       }
 
       // Reset UI
