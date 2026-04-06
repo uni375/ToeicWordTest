@@ -99,8 +99,13 @@
       btn.disabled = true;
 
       try {
-        const res = await fetch(CONFIG.GAS_URL + '?action=get', { redirect: 'follow' });
-        const records = await res.json();
+        // Results と ReviewProgress を並行取得
+        const [resResults, resReview] = await Promise.all([
+          fetch(CONFIG.GAS_URL + '?action=get',                        { redirect: 'follow' }),
+          fetch(CONFIG.GAS_URL + '?action=getReview&name=' + encodeURIComponent(name), { redirect: 'follow' })
+        ]);
+        const records       = await resResults.json();
+        const reviewHistory = await resReview.json();
 
         // 対象ユーザーのレコードを時系列順に並べる
         const userRecords = records
@@ -130,15 +135,14 @@
           return;
         }
 
-        // セットごとのレコードを整理
+        const masteredWords = new Set();
+
+        // 卒業判定①: そのセットの直近2回どちらにも出てこなかった単語は除外
         const recordsBySet = {};
         userRecords.forEach(r => {
           if (!recordsBySet[r.setNumber]) recordsBySet[r.setNumber] = [];
           recordsBySet[r.setNumber].push(r);
         });
-
-        // 卒業判定: そのセットの直近2回どちらにも出てこなかった単語は除外
-        const masteredWords = new Set();
         Object.entries(wordSetMap).forEach(([eng, setNum]) => {
           const setRecords = recordsBySet[setNum] || [];
           if (setRecords.length < 2) return;
@@ -147,6 +151,20 @@
             r.wrongWords && r.wrongWords.split(' / ').some(w => w.split('(')[0].trim() === eng)
           );
           if (!stillWrong) masteredWords.add(eng);
+        });
+
+        // 卒業判定②: 復習モードで直近2回連続正解した単語は除外
+        const reviewByWord = {};  // { english: [isCorrect, ...] } 時系列順
+        reviewHistory
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+          .forEach(r => {
+            if (!reviewByWord[r.english]) reviewByWord[r.english] = [];
+            reviewByWord[r.english].push(r.isCorrect);
+          });
+        Object.entries(reviewByWord).forEach(([eng, results]) => {
+          if (results.length < 2) return;
+          const last2 = results.slice(-2);
+          if (last2[0] === true && last2[1] === true) masteredWords.add(eng);
         });
 
         const reviewWords = Object.keys(wrongCount).filter(w => !masteredWords.has(w));

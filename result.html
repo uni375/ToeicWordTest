@@ -107,10 +107,33 @@
     const SAVE_NAMES = ['yuto', 'yushi'];
 
     async function autoSave() {
-      if (mode === 'review') return; // 復習モードは保存しない
-      if (!SAVE_NAMES.includes(name.toLowerCase())) return;
       if (!CONFIG.GAS_URL || CONFIG.GAS_URL === 'YOUR_GAS_URL_HERE') return;
 
+      if (mode === 'review') {
+        // 復習モード: 各単語の正誤を ReviewProgress シートに保存
+        if (!SAVE_NAMES.includes(name.toLowerCase())) return;
+        showStatus('保存中...', '');
+        const payload = {
+          action: 'saveReview',
+          name,
+          results: answers.map(a => ({ english: a.word.english, isCorrect: a.isCorrect }))
+        };
+        try {
+          await fetch(CONFIG.GAS_URL, {
+            method: 'POST',
+            mode:   'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body:   JSON.stringify(payload)
+          });
+          showStatus('📊 復習結果を保存しました', 'ok');
+        } catch (err) {
+          showStatus('⚠ 保存に失敗しました', 'err');
+        }
+        return;
+      }
+
+      // 通常モード
+      if (!SAVE_NAMES.includes(name.toLowerCase())) return;
       showStatus('保存中...', '');
 
       const payload = {
