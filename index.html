@@ -56,6 +56,20 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label>出題方向</label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="direction" value="jp-to-en" checked>
+            <span>🇯🇵→🇬🇧 日本語→英語（入力）</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="direction" value="en-to-jp">
+            <span>🇬🇧→🇯🇵 英語→日本語（4択）</span>
+          </label>
+        </div>
+      </div>
+
       <button class="btn btn-accent btn-full" onclick="startQuiz()">テスト開始 →</button>
       <button class="btn btn-outline btn-full" id="reviewBtn" onclick="startReview()" style="margin-top:8px;">復習モード（全履歴の間違い）</button>
 
@@ -71,14 +85,16 @@
     if (savedName) document.getElementById('name').value = savedName;
 
     function startQuiz() {
-      const name  = document.getElementById('name').value;
-      const set   = document.getElementById('set').value;
-      const order = document.querySelector('input[name="order"]:checked').value;
+      const name      = document.getElementById('name').value;
+      const set       = document.getElementById('set').value;
+      const order     = document.querySelector('input[name="order"]:checked').value;
+      const direction = document.querySelector('input[name="direction"]:checked').value;
 
       localStorage.setItem('lastPlayerName', name);
-      sessionStorage.setItem('quizName',  name);
-      sessionStorage.setItem('quizSet',   set);
-      sessionStorage.setItem('quizOrder', order);
+      sessionStorage.setItem('quizName',      name);
+      sessionStorage.setItem('quizSet',       set);
+      sessionStorage.setItem('quizOrder',     order);
+      sessionStorage.setItem('quizDirection', direction);
       sessionStorage.removeItem('quizMode');
       sessionStorage.removeItem('reviewWords');
 

@@ -33,8 +33,8 @@
         <span class="word-example" id="wordExample" style="display:none;"></span>
       </div>
 
-      <!-- Answer input -->
-      <div class="form-group">
+      <!-- Answer input (日→英モード) -->
+      <div class="form-group" id="inputArea">
         <label for="answer">英単語を入力</label>
         <div class="answer-row">
           <input type="text" id="answer"
@@ -43,6 +43,11 @@
             autocapitalize="off" spellcheck="false" />
           <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()">回答</button>
         </div>
+      </div>
+
+      <!-- 4択 (英→日モード) -->
+      <div id="choicesArea" style="display:none;">
+        <div id="choicesList" style="display:flex; flex-direction:column; gap:10px;"></div>
       </div>
 
       <!-- Feedback -->
@@ -71,10 +76,11 @@
   </div>
 
   <script>
-    const name  = sessionStorage.getItem('quizName');
-    const set   = parseInt(sessionStorage.getItem('quizSet'));
-    const order = sessionStorage.getItem('quizOrder');
-    const mode        = sessionStorage.getItem('quizMode'); // 'review' or null
+    const name      = sessionStorage.getItem('quizName');
+    const set       = parseInt(sessionStorage.getItem('quizSet'));
+    const order     = sessionStorage.getItem('quizOrder');
+    const mode      = sessionStorage.getItem('quizMode'); // 'review' or null
+    const direction = sessionStorage.getItem('quizDirection') || 'jp-to-en'; // 'jp-to-en' or 'en-to-jp'
     const wrongCounts = JSON.parse(sessionStorage.getItem('reviewWrongCounts') || '{}');
 
     if (!name || (!set && mode !== 'review')) {
@@ -90,10 +96,11 @@
     }
 
     let words = [];
+    let allWords = []; // 4択の選択肢生成用
     let currentIndex = 0;
     let answers = [];
 
-    // Enter キーで回答 or 次へ
+    // Enter キーで回答 or 次へ（日→英モードのみ）
     document.getElementById('answer').addEventListener('keydown', function (e) {
       if (e.key !== 'Enter') return;
       if (document.getElementById('nextArea').style.display === 'none' ||
@@ -133,7 +140,7 @@
         const iJp = headers.indexOf('japanese');
         const iEx = headers.indexOf('example');
 
-        const allWords = lines.slice(1)
+        allWords = lines.slice(1)
           .map(line => {
             const f = parseCSVLine(line);
             return {
@@ -143,7 +150,7 @@
               example:  iEx >= 0 ? (f[iEx] || '') : ''
             };
           })
-          .filter(w => !isNaN(w.id));
+          .filter(w => !isNaN(w.id) && w.english);
 
         let setWords;
         if (mode === 'review') {
@@ -196,22 +203,6 @@
       document.getElementById('questionNum').textContent =
         `問題 ${currentIndex + 1} / ${words.length}`;
 
-      // 例文あり：例文をメイン表示、日本語をサブ表示
-      // 例文なし：日本語のみ表示
-      const exampleEl = document.getElementById('wordExample');
-      if (word.example) {
-        document.getElementById('wordJp').textContent = word.japanese;
-        document.getElementById('wordJp').style.fontSize = '18px';
-        document.getElementById('wordJp').style.color = 'var(--text-light)';
-        exampleEl.textContent = word.example;
-        exampleEl.style.display = 'block';
-      } else {
-        document.getElementById('wordJp').textContent = word.japanese;
-        document.getElementById('wordJp').style.fontSize = '';
-        document.getElementById('wordJp').style.color = '';
-        exampleEl.style.display = 'none';
-      }
-
       // 復習モード: 間違い回数を表示
       const wrongCountEl = document.getElementById('wrongCountBadge');
       if (mode === 'review' && wrongCountEl) {
@@ -222,22 +213,101 @@
         wrongCountEl.style.display = 'none';
       }
 
-      // Reset UI
-      const answerInput = document.getElementById('answer');
-      answerInput.value    = '';
-      answerInput.disabled = false;
-      answerInput.style.borderColor = '';
-
+      // フィードバック・次へボタンをリセット
       document.getElementById('feedback').className = 'feedback-box';
       document.getElementById('feedback').innerHTML = '';
-      document.getElementById('submitBtn').style.display = 'inline-block';
-      document.getElementById('nextArea').style.display  = 'none';
-
-      // 最後の問題なら「次へ」を「結果を見る」に変更
+      document.getElementById('nextArea').style.display = 'none';
       document.getElementById('nextBtn').textContent =
         currentIndex === words.length - 1 ? '結果を見る 📊' : '次へ →';
 
-      answerInput.focus();
+      const exampleEl = document.getElementById('wordExample');
+
+      if (direction === 'en-to-jp') {
+        // 英→日モード: 英単語を大きく表示、例文なし、4択
+        document.getElementById('wordJp').textContent = word.english;
+        document.getElementById('wordJp').style.fontSize = '';
+        document.getElementById('wordJp').style.color = '';
+        exampleEl.style.display = 'none';
+
+        document.getElementById('inputArea').style.display   = 'none';
+        document.getElementById('choicesArea').style.display = 'block';
+        showChoices(word);
+      } else {
+        // 日→英モード: 日本語・例文を表示、入力フォーム
+        if (word.example) {
+          document.getElementById('wordJp').textContent = word.japanese;
+          document.getElementById('wordJp').style.fontSize = '18px';
+          document.getElementById('wordJp').style.color = 'var(--text-light)';
+          exampleEl.textContent = word.example;
+          exampleEl.style.display = 'block';
+        } else {
+          document.getElementById('wordJp').textContent = word.japanese;
+          document.getElementById('wordJp').style.fontSize = '';
+          document.getElementById('wordJp').style.color = '';
+          exampleEl.style.display = 'none';
+        }
+
+        document.getElementById('inputArea').style.display   = 'block';
+        document.getElementById('choicesArea').style.display = 'none';
+
+        const answerInput = document.getElementById('answer');
+        answerInput.value    = '';
+        answerInput.disabled = false;
+        answerInput.style.borderColor = '';
+        document.getElementById('submitBtn').style.display = 'inline-block';
+        answerInput.focus();
+      }
+    }
+
+    function showChoices(word) {
+      // 正解以外からランダムに3つ選ぶ
+      const others = allWords.filter(w => w.english !== word.english);
+      const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
+      const choices = [...shuffled, word].sort(() => Math.random() - 0.5);
+
+      const list = document.getElementById('choicesList');
+      list.innerHTML = '';
+      choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-outline';
+        btn.textContent = choice.japanese;
+        btn.style.textAlign = 'left';
+        btn.onclick = () => selectChoice(choice, word, btn, choices);
+        list.appendChild(btn);
+      });
+    }
+
+    function selectChoice(selected, correct, clickedBtn, choices) {
+      // 全ボタンを無効化
+      document.querySelectorAll('#choicesList button').forEach(b => b.disabled = true);
+
+      const isCorrect = selected.english === correct.english;
+      const fb = document.getElementById('feedback');
+
+      if (isCorrect) {
+        clickedBtn.style.background = 'var(--correct)';
+        clickedBtn.style.color = '#fff';
+        clickedBtn.style.borderColor = 'var(--correct)';
+        fb.innerHTML  = `✓ 正解！`;
+        fb.className  = 'feedback-box correct';
+      } else {
+        clickedBtn.style.background = 'var(--wrong)';
+        clickedBtn.style.color = '#fff';
+        clickedBtn.style.borderColor = 'var(--wrong)';
+        // 正解ボタンを緑に
+        document.querySelectorAll('#choicesList button').forEach(b => {
+          if (b.textContent === correct.japanese) {
+            b.style.background = 'var(--correct)';
+            b.style.color = '#fff';
+            b.style.borderColor = 'var(--correct)';
+          }
+        });
+        fb.innerHTML  = `✗ 不正解。正解: <strong>${correct.japanese}</strong>`;
+        fb.className  = 'feedback-box wrong';
+      }
+
+      answers.push({ word: correct, userAnswer: selected.japanese, isCorrect });
+      document.getElementById('nextArea').style.display = 'block';
     }
 
     function submitAnswer() {
