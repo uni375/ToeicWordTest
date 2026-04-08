@@ -17,7 +17,7 @@
   <div class="container">
     <!-- Chart card -->
     <div class="card">
-      <h2 class="card-title">正答率の推移</h2>
+      <h2 class="card-title" id="chartTitle">正答率の推移</h2>
 
       <div class="filter-row">
         <div class="form-group">
@@ -61,7 +61,8 @@
   </div>
 
   <script>
-    const COLORS = ['#1a237e', '#e65100', '#2e7d32', '#6a1b9a', '#00838f', '#c62828'];
+    const COLORS      = ['#1a237e', '#e65100', '#2e7d32', '#6a1b9a', '#00838f', '#c62828'];
+    const BAR_COLORS  = { max: '#1a237e', avg: '#e65100', latest: '#2e7d32' };
     let allRecords = [];
     let chart = null;
 
@@ -116,13 +117,22 @@
     }
 
     function renderChart() {
+      const filterSet = document.getElementById('filterSet').value;
+      if (filterSet) {
+        renderLineChart();
+      } else {
+        renderBarChart();
+      }
+    }
+
+    function renderLineChart() {
       const filtered = getFiltered();
       if (filtered.length === 0) {
         if (chart) { chart.destroy(); chart = null; }
         return;
       }
+      document.getElementById('chartTitle').textContent = '正答率の推移';
 
-      // Group by name, sort each user's records by timestamp
       const byName = {};
       filtered.forEach(r => {
         if (!byName[r.name]) byName[r.name] = [];
@@ -132,9 +142,7 @@
         recs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
       );
 
-      // For each user, assign attempt index per set (1st, 2nd, ...)
-      // key = "setNumber-attemptIndex"  e.g. "1-1", "1-2", "2-1"
-      const userAttempts = {}; // { name: { "set-attempt": accuracy } }
+      const userAttempts = {};
       Object.entries(byName).forEach(([name, recs]) => {
         const setCount = {};
         userAttempts[name] = {};
@@ -145,7 +153,6 @@
         });
       });
 
-      // Collect all unique keys across all users and sort by (set, attempt)
       const allKeys = [...new Set(
         Object.values(userAttempts).flatMap(a => Object.keys(a))
       )].sort((a, b) => {
@@ -162,8 +169,8 @@
       const datasets = Object.entries(userAttempts).map(([name, attempts], i) => ({
         label: name,
         data: allKeys.map(key => attempts[key] ?? null),
-        borderColor:     COLORS[i % COLORS.length],
-        backgroundColor: COLORS[i % COLORS.length] + '30',
+        borderColor:          COLORS[i % COLORS.length],
+        backgroundColor:      COLORS[i % COLORS.length] + '30',
         pointBackgroundColor: COLORS[i % COLORS.length],
         pointRadius: 6,
         pointHoverRadius: 8,
@@ -172,7 +179,6 @@
       }));
 
       if (chart) chart.destroy();
-
       chart = new Chart(document.getElementById('myChart'), {
         type: 'line',
         data: { labels, datasets },
@@ -181,22 +187,74 @@
           maintainAspectRatio: false,
           scales: {
             y: {
-              min: 0,
-              max: 100,
+              min: 0, max: 100,
               ticks: { callback: v => v + '%', stepSize: 20 },
               grid: { color: '#f0f0f0' }
             },
-            x: {
-              grid: { display: false }
-            }
+            x: { grid: { display: false } }
           },
           plugins: {
             legend: { position: 'top' },
-            tooltip: {
-              callbacks: {
-                label: ctx => `${ctx.dataset.label}: ${ctx.raw}%`
-              }
-            }
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw}%` } }
+          }
+        }
+      });
+    }
+
+    function renderBarChart() {
+      const filterName = document.getElementById('filterName').value;
+      const records = allRecords.filter(r =>
+        r.setNumber && (!filterName || r.name === filterName)
+      );
+
+      if (records.length === 0) {
+        if (chart) { chart.destroy(); chart = null; }
+        return;
+      }
+      document.getElementById('chartTitle').textContent = 'セット別 正答率サマリー';
+
+      // セットごとに最高点・平均点・最新点を集計
+      const setNums = [...new Set(records.map(r => Number(r.setNumber)))].sort((a, b) => a - b);
+      const labels  = setNums.map(s => `S${s}`);
+
+      const maxData    = [];
+      const avgData    = [];
+      const latestData = [];
+
+      setNums.forEach(s => {
+        const recs = records
+          .filter(r => Number(r.setNumber) === s)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const accs = recs.map(r => parseFloat(r.accuracy));
+        maxData.push(Math.max(...accs));
+        avgData.push(Math.round(accs.reduce((a, b) => a + b, 0) / accs.length));
+        latestData.push(accs[accs.length - 1]);
+      });
+
+      const datasets = [
+        { label: '最高点', data: maxData,    backgroundColor: BAR_COLORS.max    + 'cc' },
+        { label: '平均点', data: avgData,    backgroundColor: BAR_COLORS.avg    + 'cc' },
+        { label: '最新点', data: latestData, backgroundColor: BAR_COLORS.latest + 'cc' },
+      ];
+
+      if (chart) chart.destroy();
+      chart = new Chart(document.getElementById('myChart'), {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              min: 0, max: 100,
+              ticks: { callback: v => v + '%', stepSize: 20 },
+              grid: { color: '#f0f0f0' }
+            },
+            x: { grid: { display: false } }
+          },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw}%` } }
           }
         }
       });
