@@ -203,7 +203,7 @@
     }
 
     function renderTable() {
-      const filtered = [...allRecords].reverse();
+      const filtered = [...allRecords].filter(r => r.setNumber).reverse();
 
       if (filtered.length === 0) {
         showEmpty();
